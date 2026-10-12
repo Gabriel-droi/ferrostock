@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FerroStock – Sistema de inventario</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#F1F3F2; --tarjeta:#FFFFFF; --tinta:#1C2B33; --acero:#5E7280; --linea:#D5DCDF;
+  --acento:#E3A008; --acento-osc:#8A5F00; --bajo:#B3261E; --ok:#2E7D4F;
+  --r:6px;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-padding-top:0}
+body{font-family:"Source Sans 3",system-ui,sans-serif;background:var(--papel);color:var(--tinta);line-height:1.5;min-height:100vh;display:flex}
+h1,h2,h3,.marca{font-family:"Archivo",system-ui,sans-serif;font-stretch:90%;letter-spacing:-.01em}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--acento);outline-offset:2px}
+
+/* Barra lateral */
+aside{width:230px;flex-shrink:0;background:var(--tinta);color:#E8EEF1;padding:24px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:28px}
+.marca{font-size:1.5rem;font-weight:800;padding:0 8px;border-left:6px solid var(--acento)}
+.marca small{display:block;font-family:"Source Sans 3",sans-serif;font-weight:400;font-size:.8rem;color:#9FB1BB;letter-spacing:0}
+nav{display:flex;flex-direction:column;gap:4px}
+nav a{display:block;padding:10px 12px;border-radius:var(--r);text-decoration:none;color:#C9D6DC;font-weight:600}
+nav a:hover{background:#2A3E49}
+nav a[aria-current="page"]{background:var(--acento);color:#1C2B33}
+.usuario{margin-top:auto;font-size:.85rem;color:#9FB1BB;padding:0 8px}
+
+/* Contenido */
+main{flex:1;padding:32px clamp(16px,4vw,48px);max-width:1100px}
+section{display:none}
+section.activa{display:block}
+h1{font-size:1.9rem;font-weight:800;margin-bottom:4px}
+.sub{color:var(--acero);margin-bottom:24px}
+
+.resumen{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:28px}
+.dato{background:var(--tarjeta);border:1px solid var(--linea);border-radius:var(--r);padding:16px}
+.dato b{display:block;font-family:"Archivo",sans-serif;font-size:1.9rem;font-weight:800}
+.dato span{color:var(--acero);font-size:.95rem}
+.dato.alerta{border-left:6px solid var(--bajo)}
+.dato.alerta b{color:var(--bajo)}
+
+.panel{background:var(--tarjeta);border:1px solid var(--linea);border-radius:var(--r);padding:20px;margin-bottom:24px}
+.panel h2{font-size:1.15rem;margin-bottom:12px}
+
+.tabla-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.97rem}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--linea);white-space:nowrap}
+th{font-weight:600;color:var(--acero);background:#F7F9F9}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.etq{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.82rem;font-weight:600}
+.etq.ok{background:#DCEFE3;color:var(--ok)}
+.etq.bajo{background:#F7DAD7;color:var(--bajo)}
+.etq.entrada{background:#DCEFE3;color:var(--ok)}
+.etq.salida{background:#FBE9C2;color:var(--acento-osc)}
+
+form{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;align-items:end}
+label{display:flex;flex-direction:column;font-size:.9rem;font-weight:600;gap:4px}
+input,select{font:inherit;padding:9px 10px;border:1px solid #AEBBC2;border-radius:var(--r);background:#fff;color:var(--tinta)}
+button{font:inherit;font-weight:700;padding:10px 16px;border:0;border-radius:var(--r);background:var(--tinta);color:#fff;cursor:pointer}
+button:hover{background:#2A3E49}
+button.sec{background:transparent;color:var(--tinta);border:1px solid #AEBBC2;padding:4px 10px;font-weight:600}
+button.sec:hover{background:var(--papel)}
+.buscar{max-width:320px;margin-bottom:12px}
+.aviso{margin-top:12px;color:var(--ok);font-weight:600;min-height:1.5em}
+.error{color:var(--bajo)}
+
+@media (max-width:760px){
+  body{flex-direction:column}
+  aside{width:100%;height:auto;position:static;padding:16px;gap:12px}
+  nav{flex-direction:row;flex-wrap:wrap}
+  .usuario{display:none}
+}
+@media (prefers-reduced-motion:no-preference){
+  section.activa{animation:entra .2s ease-out}
+  @keyframes entra{from{opacity:0}to{opacity:1}}
+}
+</style>
+</head>
+<body>
+
+<aside>
+  <div class="marca">FerroStock<small>Inventario de ferretería</small></div>
+  <nav aria-label="Menú principal">
+    <a href="#inicio" data-sec="inicio">Inicio</a>
+    <a href="#productos" data-sec="productos">Productos</a>
+    <a href="#proveedores" data-sec="proveedores">Proveedores</a>
+    <a href="#movimientos" data-sec="movimientos">Movimientos</a>
+  </nav>
+  <div class="usuario">Sesión: Administrador<br>Prototipo con datos ficticios</div>
+</aside>
+
+<main>
+
+<!-- INICIO -->
+<section id="inicio">
+  <h1>Resumen del inventario</h1>
+  <p class="sub">Estado actual de la bodega y productos que necesitan reposición.</p>
+  <div class="resumen">
+    <div class="dato"><b id="r-prod">0</b><span>Productos registrados</span></div>
+    <div class="dato"><b id="r-uni">0</b><span>Unidades en bodega</span></div>
+    <div class="dato alerta"><b id="r-bajo">0</b><span>Con stock bajo</span></div>
+    <div class="dato"><b id="r-valor">0</b><span>Valor del inventario (C$)</span></div>
+  </div>
+  <div class="panel">
+    <h2>Reponer pronto</h2>
+    <div class="tabla-wrap">
+      <table>
+        <thead><tr><th>Código</th><th>Producto</th><th class="num">Stock</th><th class="num">Mínimo</th><th>Proveedor</th></tr></thead>
+        <tbody id="t-alertas"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUCTOS -->
+<section id="productos">
+  <h1>Productos</h1>
+  <p class="sub">Consulta el stock y registra productos nuevos.</p>
+  <div class="panel">
+    <h2>Nuevo producto</h2>
+    <form id="f-prod">
+      <label>Código<input name="codigo" required maxlength="6" placeholder="009"></label>
+      <label>Producto<input name="nombre" required placeholder="Destornillador"></label>
+      <label>Precio (C$)<input name="precio" type="number" min="1" required></label>
+      <label>Stock inicial<input name="stock" type="number" min="0" required></label>
+      <label>Stock mínimo<input name="minimo" type="number" min="0" required></label>
+      <label>Proveedor<select name="prov" id="sel-prov-p"></select></label>
+      <button type="submit">Guardar producto</button>
+    </form>
+    <p class="aviso" id="a-prod" role="status"></p>
+  </div>
+  <div class="panel">
+    <h2>Lista de productos</h2>
+    <input class="buscar" id="buscar" type="search" placeholder="Buscar por código o nombre" aria-label="Buscar producto">
+    <div class="tabla-wrap">
+      <table>
+        <thead><tr><th>Código</th><th>Producto</th><th class="num">Precio (C$)</th><th class="num">Stock</th><th>Estado</th><th></th></tr></thead>
+        <tbody id="t-prod"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- PROVEEDORES -->
+<section id="proveedores">
+  <h1>Proveedores</h1>
+  <p class="sub">Contactos de quienes abastecen la ferretería.</p>
+  <div class="panel">
+    <h2>Nuevo proveedor</h2>
+    <form id="f-prov">
+      <label>Empresa<input name="empresa" required></label>
+      <label>Contacto<input name="contacto" required></label>
+      <label>Teléfono<input name="tel" required placeholder="8888-0000"></label>
+      <button type="submit">Guardar proveedor</button>
+    </form>
+    <p class="aviso" id="a-prov" role="status"></p>
+  </div>
+  <div class="panel">
+    <h2>Lista de proveedores</h2>
+    <div class="tabla-wrap">
+      <table>
+        <thead><tr><th>Empresa</th><th>Contacto</th><th>Teléfono</th><th class="num">Productos</th></tr></thead>
+        <tbody id="t-prov"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- MOVIMIENTOS -->
+<section id="movimientos">
+  <h1>Movimientos</h1>
+  <p class="sub">Registra entradas y salidas; el stock se actualiza al instante.</p>
+  <div class="panel">
+    <h2>Registrar movimiento</h2>
+    <form id="f-mov">
+      <label>Producto<select name="prod" id="sel-prod-m"></select></label>
+      <label>Tipo<select name="tipo"><option value="entrada">Entrada</option><option value="salida">Salida</option></select></label>
+      <label>Cantidad<input name="cant" type="number" min="1" required></label>
+      <button type="submit">Registrar movimiento</button>
+    </form>
+    <p class="aviso" id="a-mov" role="status"></p>
+  </div>
+  <div class="panel">
+    <h2>Historial</h2>
+    <div class="tabla-wrap">
+      <table>
+        <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th class="num">Cantidad</th></tr></thead>
+        <tbody id="t-mov"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+/* Datos ficticios (solo en memoria; no hay base de datos) */
+const proveedores = [
+  {empresa:"Distribuidora El Constructor", contacto:"Marta Reyes",  tel:"8811-2030"},
+  {empresa:"Herramientas del Norte",       contacto:"Luis Mendoza", tel:"8822-4455"},
+  {empresa:"Eléctricos Centroamérica",     contacto:"Ana Pineda",   tel:"8833-7788"}
+];
+const productos = [
+  {codigo:"001", nombre:"Taladro",           precio:2500, stock:8,  minimo:5,  prov:0},
+  {codigo:"002", nombre:"Martillo",          precio:350,  stock:15, minimo:6,  prov:1},
+  {codigo:"003", nombre:"Cinta métrica 5 m", precio:120,  stock:4,  minimo:10, prov:1},
+  {codigo:"004", nombre:"Cemento (saco)",    precio:310,  stock:60, minimo:30, prov:0},
+  {codigo:"005", nombre:"Cable eléctrico 12 AWG (m)", precio:28, stock:90, minimo:50, prov:2},
+  {codigo:"006", nombre:"Bombillo LED 9 W",  precio:65,   stock:3,  minimo:20, prov:2},
+  {codigo:"007", nombre:"Pintura blanca 1 gal", precio:540, stock:12, minimo:8, prov:0},
+  {codigo:"008", nombre:"Clavos 2\" (lb)",   precio:35,   stock:40, minimo:25, prov:1}
+];
+const movimientos = [
+  {fecha:"2026-10-09", prod:"Cemento (saco)", tipo:"entrada", cant:40},
+  {fecha:"2026-10-10", prod:"Martillo",       tipo:"salida",  cant:3},
+  {fecha:"2026-10-11", prod:"Bombillo LED 9 W", tipo:"salida", cant:12},
+  {fecha:"2026-10-12", prod:"Taladro",        tipo:"salida",  cant:2}
+];
+
+const $ = id => document.getElementById(id);
+const esBajo = p => p.stock <= p.minimo;
+const num = n => n.toLocaleString("es-NI");
+function aviso(id, txt, error){ const e=$(id); e.textContent=txt; e.className="aviso"+(error?" error":""); }
+
+function pintar(){
+  /* Inicio */
+  $("r-prod").textContent = productos.length;
+  $("r-uni").textContent  = num(productos.reduce((s,p)=>s+p.stock,0));
+  $("r-bajo").textContent = productos.filter(esBajo).length;
+  $("r-valor").textContent= num(productos.reduce((s,p)=>s+p.stock*p.precio,0));
+  const bajos = productos.filter(esBajo);
+  $("t-alertas").innerHTML = bajos.length
+    ? bajos.map(p=>`<tr><td>${p.codigo}</td><td>${p.nombre}</td><td class="num">${p.stock}</td><td class="num">${p.minimo}</td><td>${proveedores[p.prov].empresa}</td></tr>`).join("")
+    : `<tr><td colspan="5">Todo el inventario está por encima del mínimo.</td></tr>`;
+
+  /* Productos */
+  const q = $("buscar").value.trim().toLowerCase();
+  const lista = productos.filter(p => p.codigo.includes(q) || p.nombre.toLowerCase().includes(q));
+  $("t-prod").innerHTML = lista.length
+    ? lista.map(p=>`<tr>
+        <td>${p.codigo}</td><td>${p.nombre}</td><td class="num">${num(p.precio)}</td><td class="num">${p.stock}</td>
+        <td><span class="etq ${esBajo(p)?"bajo":"ok"}">${esBajo(p)?"Stock bajo":"Disponible"}</span></td>
+        <td><button class="sec" data-del="${p.codigo}">Eliminar</button></td></tr>`).join("")
+    : `<tr><td colspan="6">No hay productos que coincidan con la búsqueda.</td></tr>`;
+
+  /* Proveedores */
+  $("t-prov").innerHTML = proveedores.map((v,i)=>`<tr><td>${v.empresa}</td><td>${v.contacto}</td><td>${v.tel}</td><td class="num">${productos.filter(p=>p.prov===i).length}</td></tr>`).join("");
+
+  /* Selects */
+  const optProv = proveedores.map((v,i)=>`<option value="${i}">${v.empresa}</option>`).join("");
+  $("sel-prov-p").innerHTML = optProv;
+  const actual = $("sel-prod-m").value;
+  $("sel-prod-m").innerHTML = productos.map(p=>`<option value="${p.codigo}">${p.codigo} – ${p.nombre} (stock ${p.stock})</option>`).join("");
+  if(actual) $("sel-prod-m").value = actual;
+
+  /* Movimientos */
+  $("t-mov").innerHTML = movimientos.slice().reverse().map(m=>`<tr><td>${m.fecha}</td><td>${m.prod}</td><td><span class="etq ${m.tipo}">${m.tipo==="entrada"?"Entrada":"Salida"}</span></td><td class="num">${m.cant}</td></tr>`).join("");
+}
+
+/* Navegación por secciones */
+function ir(){
+  const id = (location.hash || "#inicio").slice(1);
+  const valida = document.getElementById(id) ? id : "inicio";
+  document.querySelectorAll("section").forEach(s=>s.classList.toggle("activa", s.id===valida));
+  document.querySelectorAll("nav a").forEach(a=>{
+    if(a.dataset.sec===valida) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current");
+  });
+  window.scrollTo(0,0);
+}
+window.addEventListener("hashchange", ir);
+
+/* Formularios */
+$("f-prod").addEventListener("submit", e=>{
+  e.preventDefault();
+  const f = Object.fromEntries(new FormData(e.target));
+  if(productos.some(p=>p.codigo===f.codigo)) return aviso("a-prod","Ese código ya existe. Usa otro código.",true);
+  productos.push({codigo:f.codigo, nombre:f.nombre, precio:+f.precio, stock:+f.stock, minimo:+f.minimo, prov:+f.prov});
+  e.target.reset(); aviso("a-prod","Producto guardado."); pintar();
+});
+$("f-prov").addEventListener("submit", e=>{
+  e.preventDefault();
+  const f = Object.fromEntries(new FormData(e.target));
+  proveedores.push({empresa:f.empresa, contacto:f.contacto, tel:f.tel});
+  e.target.reset(); aviso("a-prov","Proveedor guardado."); pintar();
+});
+$("f-mov").addEventListener("submit", e=>{
+  e.preventDefault();
+  const f = Object.fromEntries(new FormData(e.target));
+  const p = productos.find(x=>x.codigo===f.prod); const c = +f.cant;
+  if(f.tipo==="salida" && c>p.stock) return aviso("a-mov",`Solo hay ${p.stock} unidades de ${p.nombre}. Reduce la cantidad.`,true);
+  p.stock += f.tipo==="entrada" ? c : -c;
+  movimientos.push({fecha:new Date().toISOString().slice(0,10), prod:p.nombre, tipo:f.tipo, cant:c});
+  e.target.cant.value=""; aviso("a-mov","Movimiento registrado."); pintar();
+});
+$("buscar").addEventListener("input", pintar);
+$("t-prod").addEventListener("click", e=>{
+  const cod = e.target.dataset.del; if(!cod) return;
+  productos.splice(productos.findIndex(p=>p.codigo===cod),1); pintar();
+});
+
+pintar(); ir();
+</script>
+</body>
+</html>
